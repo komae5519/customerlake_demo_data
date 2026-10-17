@@ -1,0 +1,98 @@
+{
+  "_schema": "航空会社「レイクエア」（架空）の顧客データ（CustomerLake デモ用の合成データ）。会員、予約、搭乗区間、付帯サービスの購入、マイルの履歴。金額は円。",
+  "users": {
+    "comment": "マイレージ会員マスタ。1行が1人の会員。",
+    "columns": {
+      "user_id": "会員ID（主キー）",
+      "email": "メールアドレス（架空）",
+      "last_name": "姓（日本以外の会員は英語表記）",
+      "first_name": "名（日本以外の会員は英語表記）",
+      "phone": "電話番号（架空）",
+      "date_of_birth": "生年月日",
+      "country_code": "居住国（JP／US／KR／TW／SG）",
+      "preferred_language": "希望言語（ja／en／ko／zh）",
+      "loyalty_id": "マイレージ会員番号",
+      "created_at": "会員登録日時",
+      "updated_at": "会員情報の最終更新日時",
+      "is_active": "有効な会員か"
+    }
+  },
+  "users_attended_event": {
+    "comment": "イベントに参加した会員（20人）。列は users と同じ。",
+    "columns": {
+      "user_id": "会員ID（主キー）",
+      "email": "メールアドレス（架空）",
+      "last_name": "姓（日本以外の会員は英語表記）",
+      "first_name": "名（日本以外の会員は英語表記）",
+      "phone": "電話番号（架空）",
+      "date_of_birth": "生年月日",
+      "country_code": "居住国（JP／US／KR／TW／SG）",
+      "preferred_language": "希望言語（ja／en／ko／zh）",
+      "loyalty_id": "マイレージ会員番号",
+      "created_at": "会員登録日時",
+      "updated_at": "会員情報の最終更新日時",
+      "is_active": "有効な会員か"
+    }
+  },
+  "bookings": {
+    "comment": "航空券の予約。1行が1予約（往復を含む）。",
+    "columns": {
+      "booking_id": "予約ID（主キー）",
+      "user_id": "会員ID（users.user_id）",
+      "route": "路線（出発空港-到着空港のコード）",
+      "fare_class": "運賃クラス（予約クラスの記号）",
+      "cabin": "客室クラス（エコノミー／プレミアムエコノミー／ビジネス／ファースト）",
+      "departure_date": "出発日",
+      "return_date": "帰りの便の日付",
+      "total_fare": "運賃の合計（円）",
+      "currency_code": "通貨（JPY）",
+      "booking_channel": "予約した経路（アプリ／Webサイト／旅行代理店／提携サイト）",
+      "is_international": "国際線か",
+      "booked_at": "予約した日時"
+    }
+  },
+  "flight_segments": {
+    "comment": "搭乗区間。1行が1区間（1回のフライト）。遅延や欠航もここでわかる。",
+    "columns": {
+      "segment_id": "区間ID（主キー）",
+      "user_id": "会員ID（users.user_id）",
+      "flight_number": "便名（LK はレイクエア）",
+      "origin_airport": "出発空港コード",
+      "destination_airport": "到着空港コード",
+      "scheduled_departure": "出発予定日時",
+      "actual_departure": "実際の出発日時",
+      "delay_minutes": "遅延（分）",
+      "status": "区間の状態（搭乗済み／欠航／目的地変更／搭乗せず）",
+      "miles_flown": "飛行マイル"
+    }
+  },
+  "ancillary_purchases": {
+    "comment": "付帯サービスの購入（手荷物、座席指定、ラウンジ、アップグレード、機内Wi-Fi）。",
+    "columns": {
+      "purchase_id": "購入ID（主キー）",
+      "user_id": "会員ID（users.user_id）",
+      "booking_id": "予約ID（bookings.booking_id）",
+      "purchase_type": "サービスの種類",
+      "product_name": "サービス名",
+      "quantity": "数量",
+      "revenue": "売上（円）",
+      "purchase_date": "購入日",
+      "route": "路線",
+      "loyalty_tier": "購入時の会員ランク"
+    }
+  },
+  "loyalty_activity": {
+    "comment": "マイルの獲得・利用の履歴。1行が1回の動き。",
+    "columns": {
+      "activity_id": "履歴ID（主キー）",
+      "user_id": "会員ID（users.user_id）",
+      "loyalty_tier": "会員ランク（一般／シルバー／ゴールド／プラチナ／ダイヤモンド）",
+      "points_earned": "獲得マイル",
+      "points_redeemed": "利用マイル",
+      "points_balance": "マイル残高",
+      "activity_type": "動きの種類（搭乗で獲得／提携先で獲得／特典に交換／失効）",
+      "partner_name": "提携先の名前（架空）",
+      "activity_date": "日付"
+    }
+  }
+}

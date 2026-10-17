@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# このリポジトリ固有
+.venv/
+raw/
+meta/cdp_*.json
+*.log

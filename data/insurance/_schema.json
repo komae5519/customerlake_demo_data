@@ -1,0 +1,101 @@
+{
+  "_schema": "保険会社（架空）の契約者データ（CustomerLake デモ用の合成データ）。名寄せ済みの契約者マスタ、名寄せ前のシステム別レコード、契約、保険金請求、行動ログ、キャンペーン、代理店。金額は円。",
+  "members_golden": {
+    "comment": "契約者マスタ（名寄せ済みの正しいレコード）。1行が1人の契約者。",
+    "columns": {
+      "member_id": "契約者ID（主キー）",
+      "first_name": "名",
+      "last_name": "姓",
+      "email": "メールアドレス（架空）",
+      "phone": "携帯電話番号（架空）",
+      "street_address": "住所（市区町村以下）",
+      "city": "市区町村",
+      "prefecture": "都道府県",
+      "postal_code": "郵便番号",
+      "age": "年齢",
+      "tenure_years": "契約年数",
+      "is_mutual_member": "相互会社の社員（有配当の契約者）か",
+      "engagement_score": "エンゲージメントスコア（0〜100）",
+      "preferred_channel": "希望する連絡方法",
+      "email_opt_in": "メールの受け取りに同意しているか",
+      "marketing_opt_out": "営業の連絡を断っているか",
+      "do_not_contact": "連絡禁止か",
+      "lifetime_value_jpy": "顧客生涯価値（円）",
+      "member_since": "最初の契約日"
+    }
+  },
+  "member_source_records": {
+    "comment": "名寄せ前のシステム別レコード。1人の契約者が複数のシステムに、表記がゆれた形で登録されている（カナ、ローマ字、ハイフンなし、丁目表記など）。true_member_id が正解。",
+    "columns": {
+      "source_record_id": "レコードID（主キー）",
+      "source_system": "登録元のシステム（LEGACY_POLICY_ADMIN＝旧契約管理、AGENT_PORTAL＝代理店ポータル、DIGITAL_SIGNUP＝Web申し込み）",
+      "true_member_id": "正解の契約者ID（members_golden.member_id）。名寄せの答え合わせ用",
+      "first_name": "名（表記ゆれあり）",
+      "last_name": "姓（表記ゆれあり）",
+      "email": "メールアドレス（空欄や別アドレスあり）",
+      "phone": "電話番号（空欄やハイフンなしあり）",
+      "street_address": "住所（表記ゆれあり）",
+      "prefecture": "都道府県",
+      "postal_code": "郵便番号",
+      "record_created_date": "レコードの登録日"
+    }
+  },
+  "policies": {
+    "comment": "保険契約。1行が1契約。",
+    "columns": {
+      "policy_id": "契約ID（主キー）",
+      "member_id": "契約者ID（members_golden.member_id）",
+      "policy_line": "保険の種類",
+      "annual_premium_jpy": "年間保険料（円）",
+      "policy_status": "契約の状態（有効／失効／解約）",
+      "effective_date": "契約開始日",
+      "renewal_date": "次の更新日",
+      "partner_id": "担当代理店ID（distribution_partners.partner_id）"
+    }
+  },
+  "claims": {
+    "comment": "保険金の請求。1行が1件の請求。",
+    "columns": {
+      "claim_id": "請求ID（主キー）",
+      "member_id": "契約者ID",
+      "policy_id": "契約ID（policies.policy_id）",
+      "policy_line": "保険の種類",
+      "claim_amount_jpy": "請求額（円）",
+      "claim_status": "請求の状態（受付／審査中／支払い完了／係争中）",
+      "filed_date": "請求日"
+    }
+  },
+  "interactions": {
+    "comment": "契約者の行動ログ（アプリ、Web、支払い、問い合わせ、ライフイベント）。1行が1件。",
+    "columns": {
+      "interaction_id": "ログID（主キー）",
+      "member_id": "契約者ID",
+      "event_type": "行動の種類",
+      "channel": "チャネル",
+      "event_ts": "日時"
+    }
+  },
+  "campaign_activity": {
+    "comment": "キャンペーンの配信と反応。1行が1人への1回の配信。",
+    "columns": {
+      "send_id": "配信ID（主キー）",
+      "member_id": "契約者ID",
+      "campaign_name": "キャンペーン名",
+      "channel": "チャネル",
+      "send_date": "配信日",
+      "opened": "開封したか",
+      "converted": "申し込みにつながったか"
+    }
+  },
+  "distribution_partners": {
+    "comment": "代理店マスタ（架空）。",
+    "columns": {
+      "partner_id": "代理店ID（主キー）",
+      "partner_name": "代理店名（架空）",
+      "partner_type": "代理店の種類",
+      "region_prefecture": "担当地域（都道府県）",
+      "appointed_year": "委託を始めた年",
+      "partner_status": "状態（有効／無効）"
+    }
+  }
+}

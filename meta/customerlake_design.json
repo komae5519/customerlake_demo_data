@@ -1,0 +1,177 @@
+{
+  "_about": "業種ごとのテーブル設計と CustomerLake の設定。設計書のノートブック（tools/make_design_notebook.py）の元。列の論理名は data/<業種>/_schema.json の説明から作り、ここの logical_names で上書きする。",
+  "verticals": {
+    "apparel": {
+      "folder": "retail",
+      "domain": "アパレル小売（店舗とオンライン。ポイントプログラムと洋服の定期便・レンタルあり）",
+      "purpose": "会員の購買・関心・ポイント・定期便をつないで、離反しかけの常連や関心の高いカテゴリの見込み客を見つける",
+      "use_cases": [
+        "しばらく来ていない常連に、関心の高いカテゴリ（例：アウター）の新作を案内する",
+        "ゴールド以上で最近買っていない会員に、ランク維持の特典を案内する",
+        "定期便を一時停止している会員に、再開のきっかけを届ける"
+      ],
+      "tables": {
+        "users": {"role": "プロファイル", "purpose": "会員1人1行の基本情報。エンティティの中心"},
+        "transactions": {"role": "イベント", "purpose": "注文の履歴。回数・期間・金額で絞る"},
+        "loyalty_accounts": {"role": "1:1", "purpose": "ポイント会員の会員ランクと残高"},
+        "subscriptions": {"role": "1:many", "purpose": "定期便・レンタルの契約と状態"},
+        "user_product_affinity": {"role": "1:many", "purpose": "商品カテゴリ別の関心度（1人×1カテゴリ）"}
+      },
+      "logical_names": {"user_id": "会員ID"},
+      "customerlake": {
+        "entity": {"name": "アパレル会員", "table": "users", "primary_key": "user_id",
+          "description": "アパレル小売の会員。1人1行。注文履歴、ポイント会員（会員ランク）、定期便・洋服レンタル、商品カテゴリ別の関心度とつながる。最近の購入や関心の高いカテゴリで、案内する相手を選ぶのに使う。"},
+        "relationships": [
+          {"table": "transactions", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "user_product_affinity", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "subscriptions", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "loyalty_accounts", "cardinality": "1:1", "join": "user_id = user_id"}
+        ],
+        "event_tables": [
+          {"table": "transactions", "name": "注文", "event_id": "order_id", "timestamp": "order_ts", "description": "会員の注文の履歴。1行が1回の注文"}
+        ],
+        "profile_attributes": {
+          "users": {"user_id": "会員ID", "email": "メールアドレス", "last_name": "姓", "first_name": "名", "phone": "電話番号", "postal_code": "郵便番号", "prefecture": "都道府県", "registration_channel": "登録経路", "has_style_profile": "スタイル診断済み", "created_at": "会員登録日", "updated_at": "更新日時", "is_active": "有効な会員"},
+          "loyalty_accounts": {"tier": "会員ランク", "is_enrolled": "ポイント会員", "points_balance": "ポイント残高", "tier_expiry_date": "ランクの有効期限"}
+        },
+        "aggregate_attributes": [
+          {"name": "過去1年の注文回数", "source": "transactions", "how": "直近365日の注文の件数", "genie_prompt": "会員ごとに、過去1年間に何回注文したかを数えて"},
+          {"name": "アウターの関心度", "source": "user_product_affinity", "how": "カテゴリがアウターの行の関心度スコアの最大値（1人に複数行あるので MAX）", "genie_prompt": "会員ごとに、アウターへの関心の高さを出して。1人に複数ある場合は一番高い値にして"}
+        ],
+        "audiences": [
+          {"name": "最近来ていないアウター好きの常連", "prompt": "過去1年に5回以上買っていて、直近30日は買っていない会員のうち、アウターの関心度が0.8以上の人を抽出して", "breakdown": "会員ランク", "refine": "ポイント会員の人だけに絞って"}
+        ]
+      }
+    },
+    "travel": {
+      "folder": "travel",
+      "domain": "航空会社「レイクエア」（架空。日本発着の国内線・国際線とマイレージプログラム）",
+      "purpose": "予約・搭乗・付帯サービス・マイルをつないで、上級の乗客へのアップセルや、遅延にあった乗客へのフォローの相手を見つける",
+      "use_cases": [
+        "国際線のビジネス以上に乗っていてラウンジを買っていない会員に、ラウンジ年会員を案内する",
+        "直近に長い遅延にあった会員に、お詫びのマイルを届ける",
+        "マイルが失効した会員に、マイルの使い道を案内する"
+      ],
+      "tables": {
+        "users": {"role": "プロファイル", "purpose": "マイレージ会員1人1行の基本情報。エンティティの中心"},
+        "bookings": {"role": "イベント", "purpose": "航空券の予約（路線・クラス・運賃）"},
+        "flight_segments": {"role": "イベント", "purpose": "搭乗区間（1回のフライト）。遅延・欠航も分かる"},
+        "ancillary_purchases": {"role": "イベント", "purpose": "手荷物・座席指定・ラウンジ・アップグレードなどの購入"},
+        "loyalty_activity": {"role": "イベント", "purpose": "マイルの獲得・交換・失効の履歴と会員ランク"},
+        "users_attended_event": {"role": "1:1", "purpose": "イベントに参加した会員（20人）。少人数のテスト配信用"}
+      },
+      "logical_names": {"user_id": "会員ID"},
+      "customerlake": {
+        "entity": {"name": "マイレージ会員", "table": "users", "primary_key": "user_id",
+          "description": "航空会社レイクエアのマイレージ会員。1人1行。航空券の予約、搭乗区間、手荷物・座席・ラウンジなどの付帯サービスの購入、マイルの獲得と利用の履歴とつながる。搭乗クラスやラウンジの利用、会員ランクで案内する相手を選ぶのに使う。"},
+        "relationships": [
+          {"table": "bookings", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "flight_segments", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "ancillary_purchases", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "loyalty_activity", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "users_attended_event", "cardinality": "1:1", "join": "user_id = user_id"}
+        ],
+        "event_tables": [
+          {"table": "bookings", "name": "予約", "event_id": "booking_id", "timestamp": "booked_at", "description": "航空券の予約。1行が1予約"},
+          {"table": "flight_segments", "name": "搭乗", "event_id": "segment_id", "timestamp": "scheduled_departure", "description": "搭乗区間。1行が1回のフライト"},
+          {"table": "ancillary_purchases", "name": "付帯サービスの購入", "event_id": "purchase_id", "timestamp": "purchase_ts", "description": "手荷物・座席・ラウンジなどの購入。1行が1回の購入"},
+          {"table": "loyalty_activity", "name": "マイルの動き", "event_id": "activity_id", "timestamp": "activity_ts", "description": "マイルの獲得・交換・失効。1行が1回の動き"}
+        ],
+        "profile_attributes": {
+          "users": {"user_id": "会員ID", "email": "メールアドレス", "last_name": "姓", "first_name": "名", "phone": "電話番号", "date_of_birth": "生年月日", "country_code": "居住国", "preferred_language": "希望言語", "loyalty_id": "マイレージ番号", "created_at": "会員登録日", "is_active": "有効な会員"}
+        },
+        "aggregate_attributes": [
+          {"name": "最新の会員ランク", "source": "loyalty_activity", "how": "いちばん新しい行の会員ランク", "genie_prompt": "会員ごとに、マイルの履歴のいちばん新しい会員ランクを出して"}
+        ],
+        "audiences": [
+          {"name": "ラウンジ未利用の上級の乗客", "prompt": "この1年に国際線のビジネスかファーストを予約していて、ラウンジを一度も買っていない会員を抽出して", "breakdown": "最新の会員ランク", "refine": "会員ランクがゴールド以上の人だけにして"}
+        ]
+      }
+    },
+    "gaming": {
+      "folder": "gaming",
+      "domain": "ゲーム会社「ブリック」（架空。対戦ゲーム・戦略ゲーム・カードゲームの3タイトル）",
+      "purpose": "プレイ・対戦・課金・施策への反応をつないで、離れかけのプレイヤーや課金の見込みが高いプレイヤーを見つける",
+      "use_cases": [
+        "よく遊んでいたのに最近ログインしていないプレイヤーに、復帰ボーナスを届ける",
+        "よく遊ぶのにまだ課金していないプレイヤーに、初回購入の特典を届ける",
+        "施策のメールを開いたのに買っていないプレイヤーに、リマインドを送る"
+      ],
+      "tables": {
+        "users": {"role": "プロファイル", "purpose": "プレイヤー1人1行の基本情報と成績・課金のまとめ。エンティティの中心"},
+        "game_sessions": {"role": "イベント", "purpose": "日ごとのプレイ実績（1人×1ゲーム×1日）"},
+        "tactics_matches": {"role": "イベント", "purpose": "ブリックタクティクスの対戦結果（1人×1試合）"},
+        "transactions": {"role": "イベント", "purpose": "課金（アイテム購入）"},
+        "marketing_events": {"role": "イベント", "purpose": "施策への反応（表示・開封・クリック・購入）"}
+      },
+      "logical_names": {"user_id": "プレイヤーID"},
+      "customerlake": {
+        "entity": {"name": "プレイヤー", "table": "users", "primary_key": "user_id",
+          "description": "ゲーム会社ブリックのプレイヤー。1人1行。日ごとのプレイ実績、対戦結果、課金（アイテム購入）、施策への反応とつながる。最近遊んでいるか、課金したことがあるかで、声をかける相手を選ぶのに使う。"},
+        "relationships": [
+          {"table": "game_sessions", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "tactics_matches", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "transactions", "cardinality": "1:many", "join": "user_id = user_id"},
+          {"table": "marketing_events", "cardinality": "1:many", "join": "user_id = user_id"}
+        ],
+        "event_tables": [
+          {"table": "game_sessions", "name": "プレイ", "event_id": "session_id", "timestamp": "activity_ts", "description": "日ごとのプレイ実績。1行が1人×1ゲーム×1日"},
+          {"table": "tactics_matches", "name": "対戦", "event_id": "match_event_id", "timestamp": "game_ts", "description": "ブリックタクティクスの対戦結果。1行が1人×1試合"},
+          {"table": "transactions", "name": "課金", "event_id": "transaction_id", "timestamp": "transaction_ts", "description": "アイテムの購入。1行が1回の購入"},
+          {"table": "marketing_events", "name": "施策への反応", "event_id": "event_id", "timestamp": "event_timestamp", "description": "施策への反応。1行が1回の反応"}
+        ],
+        "profile_attributes": {
+          "users": {"user_id": "プレイヤーID", "player_tag": "プレイヤー名", "email": "メールアドレス", "prefecture": "都道府県", "account_status": "アカウントの状態", "is_mailable": "メール配信可", "tracking_opt_out": "トラッキング拒否", "install_platform": "インストール元", "install_channel": "インストール経路", "registration_date": "登録日", "last_login_at": "最終ログイン日時", "arena_games_90d": "直近90日の対戦数", "arena_win_rate_90d": "直近90日の勝率", "arena_top_hero": "よく使うキャラクター", "is_payer": "課金経験", "lifetime_spend_jpy": "累計の課金額"}
+        },
+        "aggregate_attributes": [],
+        "audiences": [
+          {"name": "離れかけのプレイヤー", "prompt": "直近14日はプレイしていないけど、その前の60日には10回以上プレイしていた、アカウントが有効なプレイヤーを抽出して", "breakdown": "課金経験", "refine": "課金したことがある人だけにして"}
+        ]
+      }
+    },
+    "insurance": {
+      "folder": "insurance",
+      "domain": "保険会社（架空。自動車・火災・生命・個人年金・ペットなど。名寄せ前のレコードあり）",
+      "purpose": "契約・請求・行動の記録をつないで、ライフイベントをきっかけにしたクロスセルの相手を見つける。名寄せ前のレコードは Profile Agents の練習用",
+      "use_cases": [
+        "家を買った自動車保険の契約者で火災保険がない人に、セットプランを案内する",
+        "子どもが生まれて生命保険がない契約者に、保障の見直しを案内する",
+        "見積もりを途中でやめた契約者に、続きの案内を送る"
+      ],
+      "tables": {
+        "members_golden": {"role": "プロファイル", "purpose": "名寄せ済みの契約者1人1行。エンティティの中心"},
+        "policies": {"role": "1:many", "purpose": "保険契約（種類・状態・保険料）"},
+        "claims": {"role": "1:many", "purpose": "保険金の請求"},
+        "interactions": {"role": "イベント", "purpose": "行動の記録（アプリ・Web・支払い・問い合わせ・ライフイベント）"},
+        "campaign_activity": {"role": "イベント", "purpose": "キャンペーンの配信と反応"},
+        "member_source_records": {"role": "対象外", "purpose": "名寄せ前のシステム別レコード。Profile Agents の練習用。エンティティにはつながない"},
+        "distribution_partners": {"role": "対象外", "purpose": "代理店のマスタ。今回のエンティティにはつながない"}
+      },
+      "logical_names": {"member_id": "契約者ID"},
+      "customerlake": {
+        "entity": {"name": "契約者", "table": "members_golden", "primary_key": "member_id",
+          "description": "保険会社の契約者（名寄せ済み）。1人1行。保険契約、保険金の請求、行動の記録（見積もり、住宅購入・結婚・出産などのライフイベント）、キャンペーンの配信と反応とつながる。ライフイベントと加入している保険の組み合わせで、案内する相手を選ぶのに使う。"},
+        "relationships": [
+          {"table": "policies", "cardinality": "1:many", "join": "member_id = member_id"},
+          {"table": "claims", "cardinality": "1:many", "join": "member_id = member_id"},
+          {"table": "interactions", "cardinality": "1:many", "join": "member_id = member_id"},
+          {"table": "campaign_activity", "cardinality": "1:many", "join": "member_id = member_id"}
+        ],
+        "event_tables": [
+          {"table": "interactions", "name": "行動の記録", "event_id": "interaction_id", "timestamp": "event_ts", "description": "契約者の行動とライフイベント。1行が1件"},
+          {"table": "campaign_activity", "name": "キャンペーン", "event_id": "send_id", "timestamp": "send_ts", "description": "キャンペーンの配信と反応。1行が1人への1回の配信"}
+        ],
+        "profile_attributes": {
+          "members_golden": {"member_id": "契約者ID", "last_name": "姓", "first_name": "名", "email": "メールアドレス", "phone": "電話番号", "prefecture": "都道府県", "age": "年齢", "tenure_years": "契約年数", "engagement_score": "エンゲージメントスコア", "preferred_channel": "希望する連絡方法", "email_opt_in": "メール受信可", "marketing_opt_out": "営業の連絡を断っている", "do_not_contact": "連絡不可", "lifetime_value_jpy": "生涯価値"}
+        },
+        "aggregate_attributes": [
+          {"name": "有効な自動車保険の数", "source": "policies", "how": "種類が自動車保険で状態が有効な契約の件数", "genie_prompt": "契約者ごとに、有効な自動車保険の契約の数を数えて"},
+          {"name": "有効な火災保険の数", "source": "policies", "how": "種類が火災保険で状態が有効な契約の件数", "genie_prompt": "契約者ごとに、有効な火災保険の契約の数を数えて"}
+        ],
+        "audiences": [
+          {"name": "家を買った自動車保険の契約者", "prompt": "直近90日に住宅を購入していて、有効な自動車保険はあるけど有効な火災保険はない契約者を抽出して。営業の連絡を断っている人と連絡不可の人は除いて", "breakdown": "希望する連絡方法", "refine": "希望する連絡方法がメールの人だけにして"}
+        ]
+      }
+    }
+  }
+}

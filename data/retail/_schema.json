@@ -1,0 +1,77 @@
+{
+  "_schema": "アパレル小売の顧客データ（CustomerLake デモ用の合成データ。実在の顧客ではありません）。会員、注文、ポイント会員、定期便、カテゴリ別の関心度の5テーブル。金額は円。",
+  "users": {
+    "comment": "会員マスタ。1行が1人の会員。ほかのテーブルとは user_id でつながる。",
+    "columns": {
+      "user_id": "会員ID（主キー）",
+      "email": "メールアドレス（架空。example.com）",
+      "last_name": "姓",
+      "first_name": "名",
+      "phone": "携帯電話番号（架空）",
+      "postal_code": "郵便番号",
+      "prefecture": "都道府県",
+      "registration_channel": "会員登録した経路（Webサイト／アプリ／店舗）",
+      "has_style_profile": "スタイル診断（好みや体型の登録）を済ませているか",
+      "created_at": "会員登録日時",
+      "updated_at": "会員情報の最終更新日時",
+      "is_active": "有効な会員か（退会していない）"
+    }
+  },
+  "transactions": {
+    "comment": "注文明細。1行が1注文の1商品。店舗とオンラインの両方を含む。",
+    "columns": {
+      "order_id": "注文ID（主キー）",
+      "user_id": "会員ID（users.user_id）",
+      "sku_id": "商品SKU",
+      "quantity": "数量",
+      "net_sales": "売上金額（円、値引き後）",
+      "order_channel": "注文した経路（店舗／オンライン／ネット注文・店舗受け取り）",
+      "store_id": "店舗ID（オンライン注文は空）",
+      "order_date": "注文日",
+      "fulfillment_method": "受け取り方法（店舗受け取り／自宅配送／当日配送）",
+      "discount_amount": "値引き額（円）",
+      "is_returned": "返品されたか"
+    }
+  },
+  "loyalty_accounts": {
+    "comment": "ポイント会員。ポイントプログラムに入っている会員だけが載る。",
+    "columns": {
+      "loyalty_account_id": "ポイント会員ID（主キー）",
+      "user_id": "会員ID（users.user_id）",
+      "tier": "会員ランク（レギュラー／シルバー／ゴールド／プラチナ）",
+      "points_balance": "現在のポイント残高",
+      "lifetime_points_earned": "これまでに貯めたポイントの合計",
+      "enrolled_at": "ポイント会員になった日時",
+      "tier_expiry_date": "今の会員ランクの有効期限",
+      "is_enrolled": "ポイント会員として有効か"
+    }
+  },
+  "subscriptions": {
+    "comment": "定期便・レンタルの契約。1行が1契約。",
+    "columns": {
+      "subscription_id": "契約ID（主キー）",
+      "user_id": "会員ID（users.user_id）",
+      "product_sku": "定期便の商品SKU",
+      "product_name": "定期便の商品名",
+      "frequency_days": "お届けの間隔（日）",
+      "monthly_revenue": "月あたりの売上（円）",
+      "status": "契約の状態（利用中／一時停止／解約）",
+      "started_at": "契約開始日時",
+      "next_delivery_date": "次回お届け予定日",
+      "cancellation_reason": "解約理由（解約した契約のみ）"
+    }
+  },
+  "user_product_affinity": {
+    "comment": "会員ごと・商品カテゴリごとの関心度。1行が1人×1カテゴリ。",
+    "columns": {
+      "user_id": "会員ID（users.user_id）",
+      "category_id": "商品カテゴリID",
+      "category_name": "商品カテゴリ名",
+      "affinity_score": "関心度スコア（0〜1。高いほど関心が強い）",
+      "purchase_count_12m": "直近12か月の購入回数",
+      "browse_count_30d": "直近30日の閲覧回数",
+      "last_purchase_date": "最後に購入した日",
+      "computed_at": "スコアを計算した日時"
+    }
+  }
+}
