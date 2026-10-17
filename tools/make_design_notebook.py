@@ -107,8 +107,14 @@ def build(catalog, smap, verticals, counts):
         if cl["aggregate_attributes"]:
             lines += ["", "**集計する属性**（属性タブの「＋新しい属性」で Genie に頼む）", "", "| 表示名 | 元のテーブル | 作り方 | Genie に頼む文章 |", "|---|---|---|---|"]
             lines += [f"| {x['name']} | `{x['source']}` | {esc(x['how'])} | {esc(x['genie_prompt'])} |" for x in cl["aggregate_attributes"]]
+            lines += [f"- {x['name']}：{esc(x['note'])}" for x in cl["aggregate_attributes"] if x.get("note")]
         lines += ["", "**デモで作るオーディエンス**", "", "| オーディエンス | Genie に入力する文章 | 見る内訳 | 続けて入力する文章 |", "|---|---|---|---|"]
-        lines += [f"| {x['name']} | {esc(x['prompt'])} | {x['breakdown']} | {esc(x['refine'])} |" for x in cl["audiences"]]
+        lines += [f"| {x['name']} | {esc(x['prompt'])} | {x['breakdown']} | {esc(x['refine'])}" + (f"<br>→ {esc(x['exclude'])}" if x.get("exclude") else "") + " |" for x in cl["audiences"]]
+        for x in cl["audiences"]:
+            if x.get("expected_counts"):
+                e = x["expected_counts"]; lines += ["", f"人数の目安（{x['name']}）：Genie で {e['genie']:,}人 → 絞り込み後 {e['after_refine']:,}人 → 除外後 {e['after_exclude']:,}人（実測値。Genie の組み立てで多少変わる）"]
+            if x.get("demo_story"): lines += ["", f"**デモの流れ**：{esc(x['demo_story'])}"]
+            if x.get("tips"): lines += ["", "**つまずきやすいところ**", ""] + [f"- {esc(t)}" for t in x["tips"]]
         cells.append(cell(lines))
 
     cells.append(cell(["## テーブルがそろっているか確かめる", "", "下のセルを実行すると、各テーブルの行数が出ます。"]))
