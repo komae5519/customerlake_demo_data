@@ -1,0 +1,2 @@
+# customerlake_demo_data
+CustomerLake｜業種別CDPデータサンプル
